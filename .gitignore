@@ -1,0 +1,77 @@
+# ----------------------------
+# Node
+# ----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+.pnpm-store/
+
+# ----------------------------
+# Environment variables
+# ----------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ----------------------------
+# Build output
+# ----------------------------
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# ----------------------------
+# Prisma
+# ----------------------------
+prisma/dev.db
+prisma/dev.db-journal
+prisma/migrations/*-shadow.db
+prisma/migrations/*-shadow.db-journal
+
+# Generated Prisma client (optional if using default)
+# If using `node_modules/@prisma/client`, then you don't need this:
+# prisma/client/
+
+# ----------------------------
+# Logs
+# ----------------------------
+logs/
+*.log
+*.log.*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ----------------------------
+# OS / Editor folders
+# ----------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ----------------------------
+# Temporary files
+# ----------------------------
+tmp/
+temp/
+*.tmp
+.cache/
+coverage/
+
+# ----------------------------
+# Optional: TypeScript
+# ----------------------------
+# If using TypeScript:
+lib/
+ts-node-cache/
+
+/generated/prisma

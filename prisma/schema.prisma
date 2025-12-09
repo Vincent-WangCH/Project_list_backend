@@ -1,0 +1,62 @@
+// ============================================================================
+// Prisma Schema File
+// ============================================================================
+// This file defines the database schema and configuration for Prisma ORM.
+// Prisma is a modern database toolkit that provides:
+// 1. Type-safe database client (Prisma Client)
+// 2. Database migrations (Prisma Migrate)
+// 3. Visual database browser (Prisma Studio)
+//
+// Learn more: https://pris.ly/d/prisma-schema
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// Generator Configuration
+// ----------------------------------------------------------------------------
+// The generator block tells Prisma to generate the Prisma Client library.
+// This client provides type-safe database access methods for your models.
+generator client {
+  provider = "prisma-client-js"  // Generates JavaScript/TypeScript client
+}
+
+// ----------------------------------------------------------------------------
+// Datasource Configuration
+// ----------------------------------------------------------------------------
+// The datasource block defines how Prisma connects to your database.
+//
+// How Prisma connects to Neon PostgreSQL:
+// 1. Prisma reads the DATABASE_URL from your .env file (configured in prisma.config.ts)
+// 2. It establishes a connection to your Neon PostgreSQL database using this URL
+// 3. The connection string includes authentication (username/password) and SSL settings
+// 4. Neon provides a serverless PostgreSQL database with automatic scaling
+//
+// Communication flow:
+// Your App → Prisma Client → Prisma Query Engine → PostgreSQL Protocol → Neon Database
+//
+// The connection is pooled and managed by Prisma for optimal performance.
+// Note: In Prisma 7+, the connection URL is configured in prisma.config.ts
+datasource db {
+  provider = "postgresql"           // Database type (PostgreSQL for Neon)
+}
+
+// ----------------------------------------------------------------------------
+// Item Model
+// ----------------------------------------------------------------------------
+// This model represents the "Item" table in your PostgreSQL database.
+// Prisma will create this table when you run migrations.
+//
+// Each field maps to a column in the database table:
+// - Field name = Column name
+// - Field type = Column data type
+// - Attributes (@id, @default, etc.) = Column constraints and defaults
+model Item {
+  id          Int      @id @default(autoincrement())  // Primary key, auto-increments
+  name        String                                   // Required text field for item name
+  price       Float                                    // Required number field for item price
+  description String?                                  // Optional text field (? means nullable)
+  createdAt   DateTime @default(now())                 // Timestamp when record is created
+  updatedAt   DateTime @updatedAt                      // Timestamp, auto-updates on changes
+
+  // The @@map attribute would allow you to use a different table name in the database
+  // Example: @@map("items") would create a table named "items" instead of "Item"
+}
