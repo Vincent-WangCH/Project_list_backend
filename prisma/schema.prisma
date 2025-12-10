@@ -40,22 +40,40 @@ datasource db {
 }
 
 // ----------------------------------------------------------------------------
-// Item Model
+// Item Model (SaleItem)
 // ----------------------------------------------------------------------------
 // This model represents the "Item" table in your PostgreSQL database.
 // Prisma will create this table when you run migrations.
+//
+// Updated to match frontend SaleItem interface with additional fields:
+// - Changed id from Int to String (UUID) for better scalability
+// - Added quantity, unitPrice, category for sales tracking
+// - Added date field for sale date tracking
+// - Added ownerID field for JWT-based role control and multi-tenancy
+// - All new fields have default values to allow smooth migration from existing data
 //
 // Each field maps to a column in the database table:
 // - Field name = Column name
 // - Field type = Column data type
 // - Attributes (@id, @default, etc.) = Column constraints and defaults
 model Item {
-  id          Int      @id @default(autoincrement())  // Primary key, auto-increments
-  name        String                                   // Required text field for item name
-  price       Float                                    // Required number field for item price
-  description String?                                  // Optional text field (? means nullable)
-  createdAt   DateTime @default(now())                 // Timestamp when record is created
-  updatedAt   DateTime @updatedAt                      // Timestamp, auto-updates on changes
+  id          String   @id @default(uuid())                      // Primary key, UUID for better scalability
+  name        String   @default("item")                          // Default value: "item"
+  description String   @default("item description")              // Default value: "item description"
+  quantity    Int      @default(1)                               // Default value: 1
+  unitPrice   Float    @default(0.0)                             // Default value: 0.0
+  category    String   @default("Temporary")                     // Default value: "Temporary"
+  date        DateTime @default(now())                           // Default value: current timestamp
+  ownerID     String   @default("admin-1")                       // Default value: "admin-1" (for JWT role-based access)
+  createdAt   DateTime @default(now())                           // Timestamp when record is created
+  updatedAt   DateTime @updatedAt                                // Timestamp, auto-updates on changes
+
+  // Index on ownerID for faster queries when filtering by user
+  @@index([ownerID])
+  // Index on date for faster queries when filtering by date range
+  @@index([date])
+  // Index on category for faster queries when filtering by category
+  @@index([category])
 
   // The @@map attribute would allow you to use a different table name in the database
   // Example: @@map("items") would create a table named "items" instead of "Item"

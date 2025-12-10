@@ -57,8 +57,8 @@ export const getAllItems = async (
  * Handles GET /items/:id requests
  *
  * Flow:
- * 1. Extract item ID from URL parameters
- * 2. Convert ID to number and validate
+ * 1. Extract item ID (UUID string) from URL parameters
+ * 2. Validate ID format
  * 3. Call service to fetch item from database
  * 4. Return item if found (200) or error if not found (404)
  *
@@ -72,11 +72,11 @@ export const getItemById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Extract and parse ID from URL parameters
-    const id = parseInt(req.params.id, 10);
+    // Extract ID from URL parameters (now a UUID string)
+    const id = req.params.id;
 
-    // Validate that ID is a valid number
-    if (isNaN(id)) {
+    // Validate that ID is provided
+    if (!id || typeof id !== 'string' || id.trim() === '') {
       res.status(400).json({ error: 'Invalid item ID' });
       return;
     }
@@ -105,11 +105,11 @@ export const getItemById = async (
  *
  * Flow:
  * 1. Extract item data from request body
- * 2. Validate required fields (name, price)
+ * 2. Validate fields (all are optional with defaults)
  * 3. Call service to create item in database
  * 4. Return created item with 201 status
  *
- * @param req - Express request object (contains body with name, price, description)
+ * @param req - Express request object (contains body with optional item fields)
  * @param res - Express response object
  * @param next - Express next function (for error handling)
  */
@@ -120,25 +120,51 @@ export const createItem = async (
 ): Promise<void> => {
   try {
     // Extract data from request body
-    const { name, price, description } = req.body;
+    const { name, description, quantity, unitPrice, category, date, ownerID } = req.body;
 
-    // Validate required fields
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ error: 'Name is required and must be a non-empty string' });
+    // Validate fields if provided
+    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
+      res.status(400).json({ error: 'Name must be a non-empty string' });
       return;
     }
 
-    if (price === undefined || typeof price !== 'number' || price <= 0) {
-      res.status(400).json({ error: 'Price is required and must be greater than 0' });
+    if (description !== undefined && typeof description !== 'string') {
+      res.status(400).json({ error: 'Description must be a string' });
       return;
     }
+
+    if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 0 || !Number.isInteger(quantity))) {
+      res.status(400).json({ error: 'Quantity must be a non-negative integer' });
+      return;
+    }
+
+    if (unitPrice !== undefined && (typeof unitPrice !== 'number' || unitPrice < 0)) {
+      res.status(400).json({ error: 'Unit price must be a non-negative number' });
+      return;
+    }
+
+    if (category !== undefined && (typeof category !== 'string' || category.trim() === '')) {
+      res.status(400).json({ error: 'Category must be a non-empty string' });
+      return;
+    }
+
+    if (ownerID !== undefined && (typeof ownerID !== 'string' || ownerID.trim() === '')) {
+      res.status(400).json({ error: 'Owner ID must be a non-empty string' });
+      return;
+    }
+
+    // Prepare create data object
+    const createData: itemsService.CreateItemInput = {};
+    if (name !== undefined) createData.name = name.trim();
+    if (description !== undefined) createData.description = description.trim();
+    if (quantity !== undefined) createData.quantity = quantity;
+    if (unitPrice !== undefined) createData.unitPrice = unitPrice;
+    if (category !== undefined) createData.category = category.trim();
+    if (date !== undefined) createData.date = date;
+    if (ownerID !== undefined) createData.ownerID = ownerID.trim();
 
     // Call service layer to create item in database via Prisma
-    const item = await itemsService.createItem({
-      name: name.trim(),
-      price,
-      description: description?.trim(),
-    });
+    const item = await itemsService.createItem(createData);
 
     // Send successful response with created item (201 = Created)
     res.status(201).json(item);
@@ -154,7 +180,7 @@ export const createItem = async (
  * Handles PUT /items/:id requests
  *
  * Flow:
- * 1. Extract item ID from URL parameters
+ * 1. Extract item ID (UUID string) from URL parameters
  * 2. Extract update data from request body
  * 3. Validate ID and update data
  * 4. Call service to update item in database
@@ -170,21 +196,31 @@ export const updateItem = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Extract and parse ID from URL parameters
-    const id = parseInt(req.params.id, 10);
+    // Extract ID from URL parameters (UUID string)
+    const id = req.params.id;
 
-    // Validate that ID is a valid number
-    if (isNaN(id)) {
+    // Validate that ID is provided
+    if (!id || typeof id !== 'string' || id.trim() === '') {
       res.status(400).json({ error: 'Invalid item ID' });
       return;
     }
 
     // Extract update data from request body
-    const { name, price, description } = req.body;
+    const { name, description, quantity, unitPrice, category, date, ownerID } = req.body;
 
     // Validate that at least one field is provided for update
-    if (name === undefined && price === undefined && description === undefined) {
-      res.status(400).json({ error: 'At least one field (name, price, or description) must be provided' });
+    if (
+      name === undefined &&
+      description === undefined &&
+      quantity === undefined &&
+      unitPrice === undefined &&
+      category === undefined &&
+      date === undefined &&
+      ownerID === undefined
+    ) {
+      res.status(400).json({
+        error: 'At least one field (name, description, quantity, unitPrice, category, date, or ownerID) must be provided'
+      });
       return;
     }
 
@@ -194,17 +230,45 @@ export const updateItem = async (
       return;
     }
 
-    // Validate price if provided
-    if (price !== undefined && (typeof price !== 'number' || price <= 0)) {
-      res.status(400).json({ error: 'Price must be greater than 0' });
+    // Validate description if provided
+    if (description !== undefined && typeof description !== 'string') {
+      res.status(400).json({ error: 'Description must be a string' });
+      return;
+    }
+
+    // Validate quantity if provided
+    if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 0 || !Number.isInteger(quantity))) {
+      res.status(400).json({ error: 'Quantity must be a non-negative integer' });
+      return;
+    }
+
+    // Validate unitPrice if provided
+    if (unitPrice !== undefined && (typeof unitPrice !== 'number' || unitPrice < 0)) {
+      res.status(400).json({ error: 'Unit price must be a non-negative number' });
+      return;
+    }
+
+    // Validate category if provided
+    if (category !== undefined && (typeof category !== 'string' || category.trim() === '')) {
+      res.status(400).json({ error: 'Category must be a non-empty string' });
+      return;
+    }
+
+    // Validate ownerID if provided
+    if (ownerID !== undefined && (typeof ownerID !== 'string' || ownerID.trim() === '')) {
+      res.status(400).json({ error: 'Owner ID must be a non-empty string' });
       return;
     }
 
     // Prepare update data object (only include provided fields)
     const updateData: itemsService.UpdateItemInput = {};
     if (name !== undefined) updateData.name = name.trim();
-    if (price !== undefined) updateData.price = price;
-    if (description !== undefined) updateData.description = description?.trim();
+    if (description !== undefined) updateData.description = description.trim();
+    if (quantity !== undefined) updateData.quantity = quantity;
+    if (unitPrice !== undefined) updateData.unitPrice = unitPrice;
+    if (category !== undefined) updateData.category = category.trim();
+    if (date !== undefined) updateData.date = date;
+    if (ownerID !== undefined) updateData.ownerID = ownerID.trim();
 
     // Call service layer to update item in database via Prisma
     const item = await itemsService.updateItem(id, updateData);
@@ -223,7 +287,7 @@ export const updateItem = async (
  * Handles DELETE /items/:id requests
  *
  * Flow:
- * 1. Extract item ID from URL parameters
+ * 1. Extract item ID (UUID string) from URL parameters
  * 2. Validate ID
  * 3. Call service to delete item from database
  * 4. Return success message with 200 status
@@ -238,11 +302,11 @@ export const deleteItem = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Extract and parse ID from URL parameters
-    const id = parseInt(req.params.id, 10);
+    // Extract ID from URL parameters (UUID string)
+    const id = req.params.id;
 
-    // Validate that ID is a valid number
-    if (isNaN(id)) {
+    // Validate that ID is provided
+    if (!id || typeof id !== 'string' || id.trim() === '') {
       res.status(400).json({ error: 'Invalid item ID' });
       return;
     }
